@@ -1,0 +1,198 @@
+# -*- coding: utf-8 -*-
+import requests
+import json
+import smtplib
+import smtplib
+import mimetypes
+
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEImage import MIMEImage
+from email.Encoders import encode_base64
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+
+def EstadosT():
+    states = "https://www.ncdc.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
+    responseStates = requests.get(states , headers={'token': 'djJshyuTErOMCUaYtMqxTSwuhQCdyUNY'})
+    
+    statesjson = responseStates.json()
+    #print jso
+    b = 1
+    for a in statesjson["results"] : 
+        print ("[" + str(b) + "]"+" "+a.get("name"))
+        b =b+1
+
+def EstacionP(statesStation):
+    url = "https://www.ncdc.noaa.gov/cdo-web/api/v2/stations?locationid=FIPS:"+str(statesStation)
+    
+    response = requests.get(url , headers={'token': 'djJshyuTErOMCUaYtMqxTSwuhQCdyUNY'})
+    jso=response.json()
+    print len(jso)
+    
+    b = 1
+    if (len(jso)!=0):
+        for a in jso["results"] : 
+            print ("[" + str(b) + "]"+" "+a.get("name"))
+            b =b+1
+    
+def EstacionesT():
+    i = 0
+    for i in range(1,52):
+        if (i<10):
+            station = "0" + str(i)
+        else:
+            station = i
+        print station
+        getStions(station) 
+
+
+def EstadoEstacionP(estado, estacion):
+    if (estado<10):
+            station = "0" + str(estado)
+    else:
+            station = estado
+    url = "https://www.ncdc.noaa.gov/cdo-web/api/v2/stations?locationid=FIPS:"+str(station)
+    response = requests.get(url , headers={'token': 'djJshyuTErOMCUaYtMqxTSwuhQCdyUNY'})
+    jso=response.json()
+    
+    if (len(jso)!=0):
+        atributo = jso["results"][estacion]
+        print "name: " + str (atributo ["name"])
+        print "elevation: " + str (atributo ["elevation"])
+        print "maxdate: " + str (atributo ["maxdate"])
+        print "longitude: " + str (atributo ["longitude"])
+        print "latitude: " + str (atributo ["latitude"])
+        #print "METERS: " + str (atributo ["METERS"])
+        print "id: " + str (atributo ["id"])
+        print "mindate: " + str (atributo ["mindate"])
+        
+EstadoEstacionP(1,1) 
+
+
+
+def EnviarCorreo(miEmail,miContrasena,correoDistinatario,mensaje,subject,archivo):# archivo.pdf
+
+    msg = MIMEMultipart()
+    msg['From']=miEmail
+    msg['To']=correoDistinatario
+    msg['Subject']=subject
+
+    
+    part = MIMEApplication(open(archivo,"rb").read())
+    part.add_header('Content-Disposition', 'attachment', filename="Reporte.pdf")
+    msg.attach(part)
+
+
+    # Autenticamos
+    mailServer = smtplib.SMTP('smtp.gmail.com',587)
+    mailServer.ehlo()
+    mailServer.starttls()
+    mailServer.ehlo()
+    mailServer.login(miEmail,miContrasena)
+
+    # Enviamos
+    mailServer.sendmail(miEmail, correoDistinatario, msg.as_string())
+
+
+    mailServer.close()
+
+
+usuarios = []
+import sys
+def elegirOpcion():
+  num = input("Elige una opción:")
+  return int(num)
+
+def nuevoUsuario():
+  usuario = raw_input("Ingresa tu correo: ")
+  contrasena = raw_input("Crea tu contraseña: ")
+  if usuario.__contains__("@") and( usuario.__contains__(".com") or usuario.__contains__(".es")) :
+    usuarioNuevo = [ usuario , contrasena ]
+    usuarios.append(usuarioNuevo)
+    print "Has creado un usuario"
+    ingresoUsuario()
+  else:
+    print "Correo inválido"
+    nuevoUsuario()
+
+def ingresoUsuario():
+  usuario = raw_input("Ingresa tu correo: ")
+  contrasena = raw_input("Ingresa tu contraseña: ")
+  usuarioRegistrado = [ usuario , contrasena ]
+  for a in usuarios:
+    if usuarioRegistrado == a:
+      print "Has ingresado con éxito"
+      MenuEstados()            
+    else:
+      print "1. Crear una cuenta \n2. Volver a intentarlo"
+      elegir = elegirOpcion()
+      if elegir == 1:
+        nuevoUsuario()
+      elif elegir == 2:
+        ingresoUsuario()
+
+def MenuEstados():
+  while True:
+    print ("1. Listar Estados y regiones de EEUU")
+    print ("2. Listar las estaciones meteorológicas de los estados y regiones")
+    print ("3. Listar las estaciones meteorológicas para un estado en particular")
+    print ("4. Listar los datos disponibles de la estación meteorológica para una estación en particular")
+    print ("5. Salir")
+    opcion = elegirOpcion()
+ 
+    if opcion == 1:
+      EstadosT()
+      print "Ingrese un número para continuar"
+      elegirOpcion()
+    elif opcion == 2:
+      EstacionesT()
+      print "Ingrese un número para continuar"
+      elegirOpcion()
+    elif opcion == 3:
+      EstadoEstacionP()
+      print "Ingrese un número para continuar"
+      elegirOpcion()
+    elif opcion == 4:
+      EstacionP()
+      print "Ingrese un número para continuar"
+      elegirOpcion()
+    elif opcion == 5:
+      print "1. Cerrar sesión"
+      print "2. No cerrar sesion"
+      opcion = elegirOpcion()
+      if opcion==1:
+        MenuPrincipal()
+
+def MenuPrincipal():
+  x= True  
+  while x == True:
+    print ("1. Ingresa a tu cuenta")
+    print ("2. Crear una cuenta")
+    print ("3. Salir")
+    opcion = elegirOpcion()
+  
+    if opcion == 1:
+      print ingresoUsuario()
+    elif opcion == 2:
+      print nuevoUsuario()
+    elif opcion == 3:
+      exit()
+    else:
+      print ("Introduce un número entre 1 y 3")
+x = True
+while x == True:
+    print ("1. Ingresa a tu cuenta")
+    print ("2. Crear una cuenta")
+    print ("3. Salir")
+    opcion = elegirOpcion()
+  
+    if opcion == 1:
+      print "Aún no hay usuarios registrados"
+    elif opcion == 2:
+      print nuevoUsuario()
+    elif opcion == 3:
+      x= False
+    else:
+      print ("Introduce un número entre 1 y 3")
+def salida():
+  sys.exit()
